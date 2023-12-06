@@ -220,7 +220,7 @@ always @(*) begin
         if (Transfer_Amount > 0) begin
             if(Transfer_Amount > balance) begin
                 BC = 0;
-                next_state = S6;
+                next_state = S8;
             end
             else begin
                 BC = 1;
@@ -231,12 +231,13 @@ always @(*) begin
 
         S13: begin
             $display("Withdraw has been successful! Current Balance is %d", balance);
+            next_state = S4;
         end       
         
 
         S14: begin
             $display("Transfer has been successful! Current Balance is %d", balance);
-            next_state = 4;
+            next_state = S4;
         end
 
         S15: begin
