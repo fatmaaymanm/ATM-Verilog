@@ -99,11 +99,12 @@ always @(*) begin
         end
 
         S2: begin
-        if (PI) 
+        if (PI) begin
             if (PIN == database[index1][2]) begin
                 VP <= 1;
             end
             next_state = S3;
+        end
         else
             next_state = S2;
         end
