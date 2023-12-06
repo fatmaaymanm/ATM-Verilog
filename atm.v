@@ -187,6 +187,7 @@ always @(*) begin
             balance <= database[index1][1];
             FinalBalance <= balance - Transfer_Amount;
             balance <= FinalBalance;
+            database[index1][1] <= balance;
             dst_balance <= database[index2][1];
             dst_balance <= dst_balance + Transfer_Amount;
             database[index2][1] <= dst_balance;
