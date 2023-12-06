@@ -40,7 +40,7 @@ parameter S0 = 4'b0000, // WAITING
 
 reg [3:0] current_state, next_state;
 reg [2:0] op;
-reg	VP, BC = 1'b0, EA = 1'b0, F, IC; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount
+reg	VP, BC = 1'b0, EA = 1'b0, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
@@ -56,9 +56,7 @@ initial begin
         if (Account_Number == database[i][0]) begin
             IC <= 1;
             index1 <= i;
-            if (PIN == database[index1][2]) begin
-                VP <= 1;
-            end
+            PI <= 1;
         end
     end
 end
@@ -101,7 +99,10 @@ always @(*) begin
         end
 
         S2: begin
-        if (VP) 
+        if (PI) 
+            if (PIN == database[index1][2]) begin
+                VP <= 1;
+            end
             next_state = S3;
         else
             next_state = S2;
@@ -192,7 +193,7 @@ always @(*) begin
             dst_balance <= dst_balance + Transfer_Amount;
             database[index2][1] <= dst_balance;
             $writememh("atm_database.csv", database);
-            next_state = S13;
+            next_state = S14;
             end
         else
             next_state = S4;
