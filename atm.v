@@ -13,8 +13,15 @@ module ATM (
     input [5:0] Transfer_Amount,
 	input [4:0] Deposit_Amount,
 	input [2:0] Operation,
-	output reg [7:0] FinalBalance,
-	input LC);
+    input LC,
+	output reg [11:0] FinalBalance,
+	output reg [11:0] Final_DstBalance,
+	output reg ValidPass,
+	output reg BalanceChecked,
+	output reg EnteredAmount,
+	output reg InsertedCard,
+	output reg FoundAccount,
+	output reg PinEnter);
 
 parameter S0 = 4'b0000, // WAITING
           S1 = 4'b0001, // LANGUAGE CHOICE
@@ -40,7 +47,7 @@ parameter S0 = 4'b0000, // WAITING
 
 reg [3:0] current_state, next_state;
 reg [2:0] op;
-reg	VP, BC = 1'b0, EA = 1'b0, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount
+reg	VP, BC = 1'b0, EA = 1'b0, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
@@ -170,28 +177,21 @@ always @(*) begin
         S10: begin
         if ((Deposit_Amount > 0) && EA) 
             begin
-            balance <= database[index1][1];
-            FinalBalance <= balance + Deposit_Amount;
-            balance <= FinalBalance;
+            balance <= database[index1][1] + Deposit_Amount;
             database[index1][1] <= balance;
             $writememh("atm_database.csv", database);
             next_state = S11;
             end     
         else if (WithDraw_Amount > 0 && BC) begin
-            balance <= database[index1][1];
-            FinalBalance <= balance - WithDraw_Amount;
-            balance <= FinalBalance;
+            balance <= database[index1][1] - WithDraw_Amount;
             database[index1][1] <= balance;
             $writememh("atm_database.csv", database);
             next_state = S13;
             end
         else if (Transfer_Amount > 0 && BC) begin
-            balance <= database[index1][1];
-            FinalBalance <= balance - Transfer_Amount;
-            balance <= FinalBalance;
+            balance <= database[index1][1] - Transfer_Amount;
             database[index1][1] <= balance;
-            dst_balance <= database[index2][1];
-            dst_balance <= dst_balance + Transfer_Amount;
+            dst_balance <= database[index2][1] + Transfer_Amount;
             database[index2][1] <= dst_balance;
             $writememh("atm_database.csv", database);
             next_state = S14;
@@ -263,9 +263,18 @@ end
 
 always @(*) begin
     case (current_state)
-        S11: FinalBalance <= balance;  
+        S0: InsertedCard <= IC;
+        S2: PinEnter <= PI;
+        S3: ValidPass <= VP;
+        S5: EnteredAmount <= EA;
+        S8: FoundAccount <= F;
+        S11: FinalBalance <= balance;
+        S12: BalanceChecked <= BC;  
         S13: FinalBalance <= balance;  
-        S14: FinalBalance <= balance;  
+        S14: begin 
+            FinalBalance <= balance;
+            Final_DstBalance <= dst_balance;
+            end  
         default: FinalBalance <= 0;
     endcase
 end
