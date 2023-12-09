@@ -16,6 +16,15 @@ module ATM (
     input LC,
 	output reg [11:0] FinalBalance,
 	output reg [11:0] Final_DstBalance,
+	output reg [11:0] O1,
+	output reg [11:0] O2,
+	output reg [11:0] O3,
+	output reg [11:0] O4,
+	output reg [11:0] O5,
+	output reg [11:0] O6,
+	output reg [11:0] O7,
+	output reg [11:0] O8,
+	output reg [11:0] O9,
 	output reg ValidPass,
 	output reg BalanceChecked,
 	output reg EnteredAmount,
@@ -92,6 +101,7 @@ always @(*) begin
     case (current_state)
 
         S0: begin
+            #1
         if (IC) 
             next_state = S1;
         else
@@ -99,6 +109,7 @@ always @(*) begin
         end
 
         S1: begin
+            #1
         if (LC) 
             next_state = S2;
         else
@@ -106,6 +117,7 @@ always @(*) begin
         end
 
         S2: begin
+            #1
         if (PI) begin
             if (PIN == database[index1][2]) begin
                 VP <= 1;
@@ -117,6 +129,7 @@ always @(*) begin
         end
 
         S3: begin
+            #1
         if (VP)
             next_state = S4;
         else 
@@ -142,6 +155,7 @@ always @(*) begin
         end
 
         S5: begin
+            #1
         if (Deposit_Amount > 0) begin
             EA = 1;
             next_state = S10;
@@ -151,6 +165,7 @@ always @(*) begin
         end
 
         S6: begin
+            #1
         if (WithDraw_Amount > 0) 
             next_state = S12;
         else
@@ -158,11 +173,13 @@ always @(*) begin
         end
 
         S7: begin
+            #1
         balance <= database[index1][1];
         next_state = S11;
         end
 
         S8: begin
+            #1
         if (F && Transfer_Amount > 0) 
             next_state = S12;
         else
@@ -170,11 +187,13 @@ always @(*) begin
         end
 
         S9: begin
+            #1
             $display("You exited the ATM!");
             next_state = S0;
         end
 
         S10: begin
+            #1
         if ((Deposit_Amount > 0) && EA) 
             begin
             balance <= database[index1][1] + Deposit_Amount;
@@ -202,11 +221,13 @@ always @(*) begin
         end
 
         S11: begin
+            #1
         $display("Transaction has been successful! Current Balance is %d", balance);
         next_state = S4;
         end
         
         S12: begin
+            #1
         balance <= database[index1][1];
         if (WithDraw_Amount > 0) begin
             if(WithDraw_Amount > balance) begin
@@ -232,17 +253,20 @@ always @(*) begin
         end
 
         S13: begin
+            #1
             $display("Withdraw has been successful! Current Balance is %d", balance);
             next_state = S4;
         end       
         
 
         S14: begin
+            #1
             $display("Transfer has been successful! Current Balance is %d", balance);
             next_state = S4;
         end
 
         S15: begin
+            #1
             op = 0;
             VP = 0;
             BC = 0;
@@ -263,7 +287,18 @@ end
 
 always @(*) begin
     case (current_state)
-        S0: InsertedCard <= IC;
+        S0: begin
+             InsertedCard <= IC;
+             O1 <= database[0][0];
+             O2 <= database[0][1];
+             O3 <= database[0][2];
+             O4 <= database[1][0];
+             O5 <= database[1][1];
+             O6 <= database[1][2];
+             O7 <= database[2][0];
+             O8 <= database[2][1];
+             O9 <= database[2][2];
+        end
         S2: PinEnter <= PI;
         S3: ValidPass <= VP;
         S5: EnteredAmount <= EA;
