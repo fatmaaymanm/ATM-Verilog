@@ -29,8 +29,7 @@ module ATM (
 	output reg BalanceChecked,
 	output reg EnteredAmount,
 	output reg InsertedCard,
-	output reg FoundAccount,
-	output reg PinEnter);
+	output reg FoundAccount);
 
 parameter S0 = 4'b0000, // WAITING
           S1 = 4'b0001, // LANGUAGE CHOICE
@@ -56,35 +55,11 @@ parameter S0 = 4'b0000, // WAITING
 
 reg [3:0] current_state, next_state;
 reg [2:0] op;
-reg	VP, BC = 1'b0, EA = 1'b0, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter
+reg	VP, BC, EA, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
 integer i;
-
-
-initial begin
-    $readmemh("atm_database.csv", database);
-end
-
-initial begin
-    for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
-        if (Account_Number == database[i][0]) begin
-            IC <= 1;
-            index1 <= i;
-            PI <= 1;
-        end
-    end
-end
-
-initial begin
-    for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
-        if (Destination_Account == database[i][0]) begin
-            F <= 1;
-            index2 <= i;
-        end
-    end
-end
 
 
 
@@ -99,28 +74,56 @@ always @(posedge clk or posedge rst)
 
 always @(*) begin
     case (current_state)
-
         S0: begin
-            #1
-        if (IC) 
+        database[0][0] = 12'h123;
+        database[0][1] = 12'h457;
+        database[0][2] = 12'h123;
+        database[1][0] = 12'h456;
+        database[1][1] = 12'h8AE;
+        database[1][2] = 12'h456;
+        database[2][0] = 12'h789;
+        database[2][1] = 12'hD05;
+        database[2][2] = 12'h789;
+
+        for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
+        if (Account_Number == database[i][0]) begin
+            IC = 1;
+            index1 <= i;
+            PI = 1;
+        end 
+        else begin
+            IC = 0;
+            PI = 0;
+        end
+        end
+
+        for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
+        if (Destination_Account == database[i][0]) begin
+            F = 1;
+            index2 <= i;
+        end
+        else begin
+            F = 0;
+        end
+        end
+            BC = 0;
             next_state = S1;
-        else
-            next_state = S0;
         end
 
         S1: begin
-            #1
-        if (LC) 
+        if (IC) 
             next_state = S2;
         else
             next_state = S1;
         end
 
         S2: begin
-            #1
-        if (PI) begin
+        if (LC) begin
             if (PIN == database[index1][2]) begin
-                VP <= 1;
+                VP = 1;
+            end
+            else begin
+                VP = 0;
             end
             next_state = S3;
         end
@@ -129,7 +132,6 @@ always @(*) begin
         end
 
         S3: begin
-            #1
         if (VP)
             next_state = S4;
         else 
@@ -137,7 +139,6 @@ always @(*) begin
         end
 
         S4: begin
-        #1
         op = Operation;
         case (op)
             3'b000:
@@ -155,17 +156,16 @@ always @(*) begin
         end
 
         S5: begin
-            #1
         if (Deposit_Amount > 0) begin
             EA = 1;
             next_state = S10;
         end
         else
+            EA = 0;
             next_state = S5;
         end
 
         S6: begin
-            #1
         if (WithDraw_Amount > 0) 
             next_state = S12;
         else
@@ -173,13 +173,11 @@ always @(*) begin
         end
 
         S7: begin
-            #1
         balance <= database[index1][1];
         next_state = S11;
         end
 
         S8: begin
-            #1
         if (F && Transfer_Amount > 0) 
             next_state = S12;
         else
@@ -187,24 +185,20 @@ always @(*) begin
         end
 
         S9: begin
-            #1
             $display("You exited the ATM!");
             next_state = S0;
         end
 
         S10: begin
-            #1
         if ((Deposit_Amount > 0) && EA) 
             begin
             balance <= database[index1][1] + Deposit_Amount;
             database[index1][1] <= balance;
-            $writememh("atm_database.csv", database);
             next_state = S11;
             end     
         else if (WithDraw_Amount > 0 && BC) begin
             balance <= database[index1][1] - WithDraw_Amount;
             database[index1][1] <= balance;
-            $writememh("atm_database.csv", database);
             next_state = S13;
             end
         else if (Transfer_Amount > 0 && BC) begin
@@ -212,7 +206,6 @@ always @(*) begin
             database[index1][1] <= balance;
             dst_balance <= database[index2][1] + Transfer_Amount;
             database[index2][1] <= dst_balance;
-            $writememh("atm_database.csv", database);
             next_state = S14;
             end
         else
@@ -221,13 +214,11 @@ always @(*) begin
         end
 
         S11: begin
-            #1
         $display("Transaction has been successful! Current Balance is %d", balance);
         next_state = S4;
         end
         
         S12: begin
-            #1
         balance <= database[index1][1];
         if (WithDraw_Amount > 0) begin
             if(WithDraw_Amount > balance) begin
@@ -253,20 +244,17 @@ always @(*) begin
         end
 
         S13: begin
-            #1
             $display("Withdraw has been successful! Current Balance is %d", balance);
             next_state = S4;
         end       
         
 
         S14: begin
-            #1
             $display("Transfer has been successful! Current Balance is %d", balance);
             next_state = S4;
         end
 
         S15: begin
-            #1
             op = 0;
             VP = 0;
             BC = 0;
@@ -288,7 +276,6 @@ end
 always @(*) begin
     case (current_state)
         S0: begin
-             InsertedCard <= IC;
              O1 <= database[0][0];
              O2 <= database[0][1];
              O3 <= database[0][2];
@@ -299,7 +286,7 @@ always @(*) begin
              O8 <= database[2][1];
              O9 <= database[2][2];
         end
-        S2: PinEnter <= PI;
+        S1: InsertedCard <= IC;
         S3: ValidPass <= VP;
         S5: EnteredAmount <= EA;
         S8: FoundAccount <= F;
