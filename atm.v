@@ -9,9 +9,9 @@ module ATM (
     input [11:0] Account_Number, 
     input [11:0] PIN, 
     input [11:0] Destination_Account,
-	input [5:0] WithDraw_Amount,
-    input [5:0] Transfer_Amount,
-	input [4:0] Deposit_Amount,
+	input [7:0] WithDraw_Amount,
+    input [7:0] Transfer_Amount,
+	input [7:0] Deposit_Amount,
 	input [2:0] Operation,
     input LC,
 	output reg [11:0] FinalBalance,
@@ -29,7 +29,9 @@ module ATM (
 	output reg BalanceChecked,
 	output reg EnteredAmount,
 	output reg InsertedCard,
-	output reg FoundAccount);
+	output reg FoundAccount,
+	output reg Withdraw_State,
+	output reg Transfer_State);
 
 parameter S0 = 4'b0000, // WAITING
           S1 = 4'b0001, // LANGUAGE CHOICE
@@ -55,7 +57,7 @@ parameter S0 = 4'b0000, // WAITING
 
 reg [3:0] current_state, next_state;
 reg [2:0] op;
-reg	VP, BC, EA, F, IC, PI; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter
+reg	VP, BC, EA, F, IC, PI, W, T; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter, Withdraw, Transfer
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
@@ -88,7 +90,7 @@ always @(*) begin
         for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
         if (Account_Number == database[i][0]) begin
             IC = 1;
-            index1 <= i;
+            index1 = i;
             PI = 1;
         end 
         else begin
@@ -100,7 +102,7 @@ always @(*) begin
         for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
         if (Destination_Account == database[i][0]) begin
             F = 1;
-            index2 <= i;
+            index2 = i;
         end
         else begin
             F = 0;
@@ -160,29 +162,41 @@ always @(*) begin
             EA = 1;
             next_state = S10;
         end
-        else
+        else begin
             EA = 0;
             next_state = S5;
         end
+        end
 
         S6: begin
-        if (WithDraw_Amount > 0) 
+        if (WithDraw_Amount > 0) begin 
+            W = 1;
             next_state = S12;
-        else
+            end
+        else begin
+            W = 0;
             next_state = S6;
+            end
         end
 
         S7: begin
-        balance <= database[index1][1];
+        balance = database[index1][1];
         next_state = S11;
         end
 
         S8: begin
-        if (F && Transfer_Amount > 0) 
-            next_state = S12;
-        else
+        if (Transfer_Amount > 0) begin
+            if (F) begin
+                T = 1;
+                next_state = S12;
+            end
+        end
+        else begin
+            T = 0;
             next_state = S8;
         end
+        end
+
 
         S9: begin
             $display("You exited the ATM!");
@@ -190,27 +204,27 @@ always @(*) begin
         end
 
         S10: begin
-        if ((Deposit_Amount > 0) && EA) 
+        if (EA) 
             begin
-            balance <= database[index1][1] + Deposit_Amount;
-            database[index1][1] <= balance;
+            balance = database[index1][1] + Deposit_Amount;
+            database[index1][1] = balance;
+            EA = 0;
             next_state = S11;
             end     
-        else if (WithDraw_Amount > 0 && BC) begin
-            balance <= database[index1][1] - WithDraw_Amount;
-            database[index1][1] <= balance;
+        else if (W && BC) begin
+            balance = database[index1][1] - WithDraw_Amount;
+            database[index1][1] = balance;
             next_state = S13;
             end
-        else if (Transfer_Amount > 0 && BC) begin
-            balance <= database[index1][1] - Transfer_Amount;
-            database[index1][1] <= balance;
-            dst_balance <= database[index2][1] + Transfer_Amount;
-            database[index2][1] <= dst_balance;
+        else if (T && BC) begin
+            balance = database[index1][1] - Transfer_Amount;
+            database[index1][1] = balance;
+            dst_balance = database[index2][1] + Transfer_Amount;
+            database[index2][1] = dst_balance;
             next_state = S14;
             end
         else
             next_state = S4;
-
         end
 
         S11: begin
@@ -290,14 +304,35 @@ always @(*) begin
         S3: ValidPass <= VP;
         S5: EnteredAmount <= EA;
         S8: FoundAccount <= F;
-        S11: FinalBalance <= balance;
+        S11: begin
+            FinalBalance <= balance;
+            O1 <= database[0][0];
+            O2 <= database[0][1];
+            O3 <= database[0][2];
+            O4 <= database[1][0];
+            O5 <= database[1][1];
+            O6 <= database[1][2];
+            O7 <= database[2][0];
+            O8 <= database[2][1];
+            O9 <= database[2][2];
+        end
         S12: BalanceChecked <= BC;  
-        S13: FinalBalance <= balance;  
+        S13: begin
+            FinalBalance <= balance;
+            O1 <= database[0][0];
+            O2 <= database[0][1];
+            O3 <= database[0][2];
+            O4 <= database[1][0];
+            O5 <= database[1][1];
+            O6 <= database[1][2];
+            O7 <= database[2][0];
+            O8 <= database[2][1];
+            O9 <= database[2][2];
+        end  
         S14: begin 
             FinalBalance <= balance;
             Final_DstBalance <= dst_balance;
             end  
-        default: FinalBalance <= 0;
     endcase
 end
 
