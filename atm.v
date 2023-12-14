@@ -9,9 +9,9 @@ module ATM (
     input [11:0] Account_Number, 
     input [11:0] PIN, 
     input [11:0] Destination_Account,
-	input [7:0] WithDraw_Amount,
-    input [7:0] Transfer_Amount,
-	input [7:0] Deposit_Amount,
+	input [11:0] WithDraw_Amount,
+    input [11:0] Transfer_Amount,
+	input [11:0] Deposit_Amount,
 	input [2:0] Operation,
     input LC,
 	output reg [11:0] FinalBalance,
@@ -61,7 +61,7 @@ reg	VP, BC, EA, F, IC, PI, W, T; //ValidPass, BalanceCheck, EnteredAmount, Found
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
-integer i;
+integer i, j;
 
 
 
@@ -92,20 +92,11 @@ always @(*) begin
             IC = 1;
             index1 = i;
             PI = 1;
+            i = COL_DEPTH;
         end 
         else begin
             IC = 0;
             PI = 0;
-        end
-        end
-
-        for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
-        if (Destination_Account == database[i][0]) begin
-            F = 1;
-            index2 = i;
-        end
-        else begin
-            F = 0;
         end
         end
             BC = 0;
@@ -116,7 +107,7 @@ always @(*) begin
         if (IC) 
             next_state = S2;
         else
-            next_state = S1;
+            next_state = S0;
         end
 
         S2: begin
@@ -130,14 +121,14 @@ always @(*) begin
             next_state = S3;
         end
         else
-            next_state = S2;
+            next_state = S0;
         end
 
         S3: begin
         if (VP)
             next_state = S4;
         else 
-            next_state = S3;
+            next_state = S0;
         end
 
         S4: begin
@@ -164,7 +155,7 @@ always @(*) begin
         end
         else begin
             EA = 0;
-            next_state = S5;
+            next_state = S4;
         end
         end
 
@@ -175,7 +166,7 @@ always @(*) begin
             end
         else begin
             W = 0;
-            next_state = S6;
+            next_state = S4;
             end
         end
 
@@ -186,21 +177,32 @@ always @(*) begin
 
         S8: begin
         if (Transfer_Amount > 0) begin
+            for (j = 0 ; j < COL_DEPTH ; j = j + 1) begin
+                if (Destination_Account == database[j][0]) begin
+                    F = 1;
+                    index2 = j;
+                    j = COL_DEPTH;
+                end
+                else
+                    F = 0;
+            end
             if (F) begin
                 T = 1;
                 next_state = S12;
-            end
+            end 
+            else
+                next_state = S4;
         end
         else begin
             T = 0;
-            next_state = S8;
+            next_state = S4;
         end
         end
 
 
         S9: begin
             $display("You exited the ATM!");
-            next_state = S0;
+            next_state = S15;
         end
 
         S10: begin
@@ -214,6 +216,8 @@ always @(*) begin
         else if (W && BC) begin
             balance = database[index1][1] - WithDraw_Amount;
             database[index1][1] = balance;
+            BC = 0;
+            W = 0;
             next_state = S13;
             end
         else if (T && BC) begin
@@ -221,6 +225,8 @@ always @(*) begin
             database[index1][1] = balance;
             dst_balance = database[index2][1] + Transfer_Amount;
             database[index2][1] = dst_balance;
+            BC = 0;
+            T = 0;
             next_state = S14;
             end
         else
@@ -233,11 +239,11 @@ always @(*) begin
         end
         
         S12: begin
-        balance <= database[index1][1];
+        balance = database[index1][1];
         if (WithDraw_Amount > 0) begin
             if(WithDraw_Amount > balance) begin
                 BC = 0;
-                next_state = S6;
+                next_state = S4;
             end
             else begin
                 BC = 1;
@@ -245,10 +251,10 @@ always @(*) begin
             end
         end
 
-        if (Transfer_Amount > 0) begin
+        else if (Transfer_Amount > 0) begin
             if(Transfer_Amount > balance) begin
                 BC = 0;
-                next_state = S8;
+                next_state = S4;
             end
             else begin
                 BC = 1;
@@ -332,6 +338,15 @@ always @(*) begin
         S14: begin 
             FinalBalance <= balance;
             Final_DstBalance <= dst_balance;
+            O1 <= database[0][0];
+            O2 <= database[0][1];
+            O3 <= database[0][2];
+            O4 <= database[1][0];
+            O5 <= database[1][1];
+            O6 <= database[1][2];
+            O7 <= database[2][0];
+            O8 <= database[2][1];
+            O9 <= database[2][2];
             end  
     endcase
 end
