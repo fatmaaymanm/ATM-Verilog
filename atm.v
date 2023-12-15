@@ -48,7 +48,7 @@ parameter S0 = 4'b0000, // WAITING
 
 reg [3:0] current_state, next_state;
 reg [2:0] op;
-reg	VP, BC, EA, F, IC, PI, W, T; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter, Withdraw, Transfer
+reg	VP, BC, EA, F, IC, W, T; //ValidPass, BalanceCheck, EnteredAmount, FoundAccount, InsertedCard, PinEnter, Withdraw, Transfer
 reg [REG_WIDTH - 1:0] balance, dst_balance; 
 reg [REG_WIDTH - 1:0] database [0 : COL_DEPTH - 1] [0:2];
 reg [1:0] index1, index2;
@@ -68,7 +68,7 @@ always @(posedge clk or posedge rst)
 always @(*) begin
     case (current_state)
         S0: begin
-            
+
         $readmemh("atm_database.txt", database);
 
         for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
