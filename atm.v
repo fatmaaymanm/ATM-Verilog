@@ -32,7 +32,6 @@ parameter S0 = 4'b0000, // WAITING
           S12 = 4'b1100, // CHECK BALANCE
           S13 = 4'b1101, // MONEY OUT
           S14 = 4'b1110, // SUCCESS
-          S15 = 4'b1111, // CLEAR
           REG_WIDTH = 12,
           COL_DEPTH = 4;
 
