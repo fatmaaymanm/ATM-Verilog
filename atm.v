@@ -16,15 +16,6 @@ module ATM (
     input LC,
 	output reg [11:0] FinalBalance,
 	output reg [11:0] Final_DstBalance,
-	output reg [11:0] O1,
-	output reg [11:0] O2,
-	output reg [11:0] O3,
-	output reg [11:0] O4,
-	output reg [11:0] O5,
-	output reg [11:0] O6,
-	output reg [11:0] O7,
-	output reg [11:0] O8,
-	output reg [11:0] O9,
 	output reg ValidPass,
 	output reg BalanceChecked,
 	output reg EnteredAmount,
@@ -77,15 +68,8 @@ always @(posedge clk or posedge rst)
 always @(*) begin
     case (current_state)
         S0: begin
-        database[0][0] = 12'h123;
-        database[0][1] = 12'h457;
-        database[0][2] = 12'h123;
-        database[1][0] = 12'h456;
-        database[1][1] = 12'h8AE;
-        database[1][2] = 12'h456;
-        database[2][0] = 12'h789;
-        database[2][1] = 12'hD05;
-        database[2][2] = 12'h789;
+            
+        $readmemh("atm_database.txt", database);
 
         for (i = 0 ; i < COL_DEPTH ; i = i + 1) begin
         if (Account_Number == database[i][0]) begin
@@ -295,58 +279,16 @@ end
 
 always @(*) begin
     case (current_state)
-        S0: begin
-             O1 <= database[0][0];
-             O2 <= database[0][1];
-             O3 <= database[0][2];
-             O4 <= database[1][0];
-             O5 <= database[1][1];
-             O6 <= database[1][2];
-             O7 <= database[2][0];
-             O8 <= database[2][1];
-             O9 <= database[2][2];
-        end
         S1: InsertedCard <= IC;
         S3: ValidPass <= VP;
         S5: EnteredAmount <= EA;
         S8: FoundAccount <= F;
-        S11: begin
-            FinalBalance <= balance;
-            O1 <= database[0][0];
-            O2 <= database[0][1];
-            O3 <= database[0][2];
-            O4 <= database[1][0];
-            O5 <= database[1][1];
-            O6 <= database[1][2];
-            O7 <= database[2][0];
-            O8 <= database[2][1];
-            O9 <= database[2][2];
-        end
+        S11: FinalBalance <= balance;
         S12: BalanceChecked <= BC;  
-        S13: begin
-            FinalBalance <= balance;
-            O1 <= database[0][0];
-            O2 <= database[0][1];
-            O3 <= database[0][2];
-            O4 <= database[1][0];
-            O5 <= database[1][1];
-            O6 <= database[1][2];
-            O7 <= database[2][0];
-            O8 <= database[2][1];
-            O9 <= database[2][2];
-        end  
+        S13: FinalBalance <= balance; 
         S14: begin 
             FinalBalance <= balance;
             Final_DstBalance <= dst_balance;
-            O1 <= database[0][0];
-            O2 <= database[0][1];
-            O3 <= database[0][2];
-            O4 <= database[1][0];
-            O5 <= database[1][1];
-            O6 <= database[1][2];
-            O7 <= database[2][0];
-            O8 <= database[2][1];
-            O9 <= database[2][2];
             end  
     endcase
 end
